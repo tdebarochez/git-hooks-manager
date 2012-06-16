@@ -1,0 +1,16 @@
+{
+  "author": "Thomas Debarochez",
+  "name": "git-hooks-manager",
+  "description": "hook manager for git",
+  "version": "0.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "daemon": "0.5.1",
+    "glob": "3.1.9"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
+}

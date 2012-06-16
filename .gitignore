@@ -1,0 +1,7 @@
+node_modules/
+post-commit
+post-receive
+pre-commit
+stderr.log
+stdout.log
+*.d/
