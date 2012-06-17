@@ -1,7 +1,10 @@
 node_modules/
 post-commit
+!hooks/post-commit
 post-receive
+!hooks/post-receive
 pre-commit
+!hooks/pre-commit
 stderr.log
 stdout.log
 *.d/
