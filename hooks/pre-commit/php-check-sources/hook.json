@@ -1,0 +1,6 @@
+{
+  "index": "check.sh",
+  "name": "php-check-sources",
+  "description": "check php syntax for every files, with 'php-file-extension' variable as extension, that will be committed",
+  "variables": ["php-file-extension"]
+}
