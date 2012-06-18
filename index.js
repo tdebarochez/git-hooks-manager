@@ -50,7 +50,6 @@ function Manager () {
 
 Manager.prototype = {
   init: function () {
-    child_process.spawn('npm', ['install']);
     hooks.forEach(function (hook) {
       if (fs.existsSync(hook)) {
         fs.unlinkSync(hook);
