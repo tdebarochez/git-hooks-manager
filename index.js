@@ -14,7 +14,7 @@ function Manager () {
       , hook_type = "hook_type" in opts ? opts.hook_type : opts
       , hook_name = opts.hook_name
       , root_path = "root_path" in opts ? opts.root_path : '.';
-    fs.stat(hook_type + '.d', function(err, stat) {
+    fs.stat(path.join(root_path, hook_type + '.d'), function(err, stat) {
       if (err) {
         return console.error(err);
       }
@@ -25,9 +25,9 @@ function Manager () {
         var conf_file = path.join(root_path, 'hooks', hook_type, hook_name, 'hook.json');
         fs.exists(conf_file, function (exists) {
           if (!exists) {
-            return cb("hook configuration not found");
+            return cb("hook configuration not found [" + conf_file + "]");
           }
-          cb(null, require('./' + conf_file));
+          cb(null, require('./' + path.join('hooks', hook_type, hook_name, 'hook.json')));
         });
         return;
       }
@@ -84,7 +84,7 @@ Manager.prototype = {
             return;
           }
           self.getHooksConf({"hook_type": hook_type,
-                             "hook_name": hook_name,
+                             "hook_name": path.basename(hook_name),
                              "root_path": root_path}, function (err, conf) {
             if (err) {
               return console.error(err);
@@ -98,13 +98,12 @@ Manager.prototype = {
             }
             var child_proc = child_process.execFile(hook_name, [], {}, function (err) {
               if (err) {
-                console.error(hook_name + ' execution failed');
-                console.error('' + err);
                 child_proc.stdin.end();
+                process.exit(1);
                 return;
               }
             });
-            console.log('execute ' + hook_name + ' (' + child_proc.pid + ')');
+            console.log('[HOOK] ' + hook_name + ' (' + child_proc.pid + ')');
             if (child_proc.stdout.readable) {
               child_proc.stdout.pipe(process.stdout);
             }
@@ -112,7 +111,7 @@ Manager.prototype = {
               child_proc.stderr.pipe(process.stderr);
             }
             child_proc.stdin.on('error', function (err) {
-              console.error('' + err);
+              //console.error('' + err);
             });
             if (child_proc.stdin.writable) {
               child_proc.stdin.write(inputs);
