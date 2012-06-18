@@ -7,7 +7,7 @@ var fs = require('fs')
 var hooks = ['applypatch-msg', 'commit-msg', 'pre-auto-gc', 'pre-applypatch', 'pre-commit', 'pre-rebase',
              'pre-receive', 'prepare-commit-msg', 'post-applypatch', 'post-checkout', 'post-commit',
              'post-merge', 'post-receive', 'post-rewrite', 'post-update']
-  , root_path = path.join('.git', 'hooks');
+  , root_path = path.join(process.env.GIT_DIR, 'hooks');
 
 function Manager () {
   this.getHooksConf = function (opts, cb) {
