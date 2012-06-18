@@ -4,7 +4,9 @@ var fs = require('fs')
   , path = require('path')
   , child_process = require('child_process');
 
-var hooks = ['post-commit', 'pre-commit', 'post-receive']
+var hooks = ['applypatch-msg', 'commit-msg', 'pre-auto-gc', 'pre-applypatch', 'pre-commit', 'pre-rebase',
+             'pre-receive', 'prepare-commit-msg', 'post-applypatch', 'post-checkout', 'post-commit',
+             'post-merge', 'post-receive', 'post-rewrite', 'post-update']
   , root_path = path.join('.git', 'hooks');
 
 function Manager () {
