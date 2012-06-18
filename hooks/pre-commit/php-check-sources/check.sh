@@ -1,3 +1,5 @@
 #!/bin/sh
 
-git st --porcelain | grep -E '^(A|M)' | cut -d" " -f3 | grep -E '\.(inc|psp)$' | xargs -n1 php -l
+phpextensions=$(git config hooks.php-file-extension)
+
+git st --porcelain | grep -E '^(A|M)' | cut -d" " -f3 | grep -E "\\.($phpextensions)\$" | xargs -n1 php -l
