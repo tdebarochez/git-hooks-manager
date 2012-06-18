@@ -8,7 +8,9 @@
     "daemon": "0.5.1",
     "glob": "3.1.9"
   },
-  "install": "./index.js init",
+  "scripts": {
+    "install": "./index.js init"
+  },
   "devDependencies": {},
   "optionalDependencies": {},
   "engines": {
