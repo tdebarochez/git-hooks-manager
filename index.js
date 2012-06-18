@@ -11,9 +11,9 @@ function Manager () {
   this.getHooksConf = function (opts, cb) {
     var glob = require('glob')
       , confs = []
-      , hook_type = "hook_type" in opts ? opts.hook_type : opts
+      , hook_type = typeof opts === "object" ? opts.hook_type : opts
       , hook_name = opts.hook_name
-      , root_path = "root_path" in opts ? opts.root_path : '.';
+      , root_path = typeof opts === "object" ? opts.root_path : '.';
     fs.stat(path.join(root_path, hook_type + '.d'), function(err, stat) {
       if (err) {
         return console.error(err);
