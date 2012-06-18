@@ -1,0 +1,8 @@
+{
+  "index": "post-receive-email",
+  "name": "post-receive-email",
+  "description": "This hook script assumes it is enabled on the central repository of a project, with all users pushing only to it and not between each other.  It will still work if you don't operate in that style, but it would become possible for the email to be from someone other than the person doing the push.",
+  "variables": ["mailinglist", "announcelist", "envelopesender", "emailprefix", "showrev",
+                "emailmaxlines", "diffopts"],
+  "async": false
+}
