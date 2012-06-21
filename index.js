@@ -67,20 +67,23 @@ Manager.prototype = {
     var daemon = require('daemon')
       , glob = require('glob');
     var inputs = ""
-      , daemonized = true
+      , daemonized = false
       , self = this;
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
     process.stdin.on('data', function (chunk) {
       inputs += chunk;
-    });
-    process.stdin.on('end', function () {
+      if (inputs.charAt(inputs.length - 1) != "\n") {
+        return;
+      }
+      process.stdin.pause();
       glob(path.join(root_path, hook_type + '.d', '*'), function (err, files) {
         if (err) {
           return console.log(err);
         }
-        console.log(files.length + ' script(s) to execute, ', files);
-        files.forEach(function (hook_name) {
+        console.log(files.length + ' ' + hook_type + ' script(s) to execute, ', files);
+        files.forEach(function (hook_name, hook_number) {
+
           if (fs.statSync(hook_name).isDirectory()) {
             return;
           }
@@ -98,6 +101,9 @@ Manager.prototype = {
               console.log(new Date + ' : background process started successfully with pid ' + pid);
             }
             var child_proc = child_process.execFile(hook_name, [], {}, function (err) {
+              if (hook_number == files.length - 1) {
+                process.stdin.resume();
+              }
               if (err) {
                 child_proc.stdin.end();
                 process.exit(1);
@@ -121,6 +127,8 @@ Manager.prototype = {
           });
         });
       });
+    });
+    process.stdin.on('end', function () {
     });
   },
   search: function (hook_type, query) {
