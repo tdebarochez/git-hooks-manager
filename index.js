@@ -29,7 +29,9 @@ function Manager () {
           if (!exists) {
             return cb("hook configuration not found [" + conf_file + "]");
           }
-          cb(null, require('./' + path.join('hooks', hook_type, hook_name, 'hook.json')));
+          conf = require('./' + path.join('hooks', hook_type, hook_name, 'hook.json'));
+          conf.name = hook_name;
+          cb(null, conf);
         });
         return;
       }
