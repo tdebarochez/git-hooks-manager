@@ -1,0 +1,5 @@
+{
+  "index": "check.sh",
+  "description": "use jslint to check your javascript source code",
+  "async": false
+}
