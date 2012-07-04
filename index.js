@@ -281,6 +281,18 @@ Manager.prototype = {
       }
     });
   },
+  list: function (hook_type) {
+    var glob = require('glob');
+    glob(path.join(hook_type + '.d', '*'), function (err, files) {
+      if (err) {
+        return console.error(err);
+      }
+      console.log(files.length + ' ' + hook_type + ' hook(s) setup :');
+      files.forEach(function (hook_name) {
+        console.log(' - ' + path.basename(hook_name));
+      });
+    });
+  },
   help: function (cmd) {
     switch (cmd) {
       case 'add':
@@ -298,6 +310,12 @@ Manager.prototype = {
       case 'init':
         console.log('./' + this.bin_name +' init');
         console.log('Initial setup. Create all symbolic links and directories.');
+        break;
+      case 'list':
+        console.log('./' + this.bin_name +' list <hook_type>');
+        console.log('Where <hook_type> is one of :');
+        console.log(hooks.join(', '));
+        console.log('List every hooks setup for <hook_type>');
         break;
       case 'reset':
         console.log('./' + this.bin_name +' init');
