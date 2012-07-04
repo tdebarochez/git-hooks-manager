@@ -75,6 +75,16 @@ function Manager () {
 Manager.prototype = {
   init: function () {
     hooks.forEach(function (hook) {
+      if (!fs.existsSync(hook)) {
+        fs.symlinkSync(__filename, hook, 'file');
+      }
+      if (!fs.existsSync(hook + '.d')) {
+        fs.mkdirSync(hook + '.d', 493); // 0755
+      }
+    });
+  },
+  reset: function () {
+    hooks.forEach(function (hook) {
       if (fs.existsSync(hook)) {
         fs.unlinkSync(hook);
       }
@@ -279,17 +289,25 @@ Manager.prototype = {
         console.log(hooks.join(', '));
         console.log('<hook_name> is one of hooks available');
         break;
-      case 'rm':
-        console.log('./' + this.bin_name +' rm <hook_type> <hook_name>');
-        console.log('Where <hook_type> is one of :');
-        console.log(hooks.join(', '));
-        console.log('<hook_name> is one of hooks already installed');
-        break;
       case 'hook':
         console.log('./' + this.bin_name +' hook <hook_type>');
         console.log('Where <hook_type> is one of :');
         console.log(hooks.join(', '));
         console.log('Simulate <hook_type> execution');
+        break;
+      case 'init':
+        console.log('./' + this.bin_name +' init');
+        console.log('Initial setup. Create all symbolic links and directories.');
+        break;
+      case 'reset':
+        console.log('./' + this.bin_name +' init');
+        console.log('Remove every hooks setup.');
+        break;
+      case 'rm':
+        console.log('./' + this.bin_name +' rm <hook_type> <hook_name>');
+        console.log('Where <hook_type> is one of :');
+        console.log(hooks.join(', '));
+        console.log('<hook_name> is one of hooks already installed');
         break;
       case 'search':
         console.log('./' + this.bin_name +' search <hook_type> <query>');
@@ -300,7 +318,7 @@ Manager.prototype = {
       default:
         console.log('Usage : ./' + this.bin_name + ' <command>');
         console.log('Where <command> is one of :');
-        console.log('\tadd, rm, hook, search\n');
+        console.log('\tadd, hook, init, reset, rm, search\n');
         console.log('./' + this.bin_name + ' help <command>\tquick help on <command>');
     }
   }
