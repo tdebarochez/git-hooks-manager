@@ -63,6 +63,7 @@ function Manager () {
         }
         files.forEach(function (file) {
           var conf = require('./' + file);
+          conf.name = path.basename(path.dirname(file));
           confs.push(conf);
         });
         cb(null, confs);
