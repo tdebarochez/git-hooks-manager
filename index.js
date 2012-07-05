@@ -283,11 +283,15 @@ Manager.prototype = {
   },
   list: function (hook_type) {
     var glob = require('glob');
+    if (typeof hook_type === 'undefined') {
+      return console.error('please define <hook_type>');
+    }
     glob(path.join(hook_type + '.d', '*'), function (err, files) {
       if (err) {
         return console.error(err);
       }
-      console.log(files.length + ' ' + hook_type + ' hook(s) setup :');
+      console.log(files.length + ' ' + hook_type + ' hook' + (files.length > 1 ? 's' : '') + ' setup'
+                  + (files.length > 0 ? ' :' : ''));
       files.forEach(function (hook_name) {
         console.log(' - ' + path.basename(hook_name));
       });
