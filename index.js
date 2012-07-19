@@ -25,7 +25,10 @@ var hooks = ['applypatch-msg', 'commit-msg', 'pre-auto-gc', 'pre-applypatch', 'p
                     'post-update': ['ref', '*'],
                     'pre-auto-gc': [],
                     'post-rewrite': ['stdin', 'old_value', 'new_value', 'extra', '*']}
-  , root_path = path.join(process.env.GIT_DIR, 'hooks');
+  , git_dir = "GIT_DIR" in process.env
+            ? process.env.GIT_DIR
+            : (process.cwd().substr(-4) == '.git' ? process.cwd() : '.git')
+  , root_path = path.join(git_dir, 'hooks');
 
 function rmdirRecursiveSync(directory) {
   if (directory.length < 3) {
