@@ -9,6 +9,22 @@ var fs = require('fs')
 var hooks = ['applypatch-msg', 'commit-msg', 'pre-auto-gc', 'pre-applypatch', 'pre-commit', 'pre-rebase',
              'pre-receive', 'prepare-commit-msg', 'post-applypatch', 'post-checkout', 'post-commit',
              'post-merge', 'post-receive', 'post-rewrite', 'post-update']
+  , hooks_params = {'applypatch-msg': ['filename'],
+                    'pre-applypatch': [],
+                    'post-applypatch': [],
+                    'pre-commit': [],
+                    'prepare-commit-msg': ['commit_message_filename', 'source', 'commit_hash'],
+                    'commit-msg': ['commit_message_filename'],
+                    'post-commit': [],
+                    'pre-rebase': [],
+                    'post-checkout': ['previous_ref', 'next_ref', 'branch_flag'],
+                    'post-merge': ['squash_flag'],
+                    'pre-receive': ['stdin', 'old_value', 'new_value', 'ref_name'],
+                    'update': ['ref_name', 'old_value', 'new_value'],
+                    'post-receive': ['stdin', 'old_value', 'new_value', 'ref_name'],
+                    'post-update': ['ref', '*'],
+                    'pre-auto-gc': [],
+                    'post-rewrite': ['stdin', 'old_value', 'new_value', 'extra', '*']}
   , root_path = path.join(process.env.GIT_DIR, 'hooks');
 
 function rmdirRecursiveSync(directory) {
@@ -95,7 +111,7 @@ Manager.prototype = {
       fs.mkdirSync(hook + '.d', 493); // 0755
     });
   },
-  hook: function (hook_type) {
+  hook: function (hook_type, process_args) {
     var daemon = require('daemon')
       , glob = require('glob')
       , inputs = ""
@@ -106,7 +122,12 @@ Manager.prototype = {
           if (err) {
             return console.log(err);
           }
-          console.log(files.length + ' ' + hook_type + ' script(s) to execute, ', files);
+          if (files.length > 0) {
+            console.log(files.length + ' ' + hook_type + ' script(s) to execute, ', files);
+          }
+          else {
+            console.log('no ' + hook_type + ' script to execute');
+          }
           files.forEach(function (hook_name, hook_number) {
 
             if (fs.statSync(hook_name).isDirectory()) {
@@ -116,7 +137,8 @@ Manager.prototype = {
                                "hook_name": path.basename(hook_name),
                                "root_path": root_path}, function (err, conf) {
               var pid = -1
-                , child_proc = null;
+                , child_proc = null
+                , args = [];
               if (err) {
                 return console.error(err);
               }
@@ -127,8 +149,12 @@ Manager.prototype = {
                 pid = daemon.start(path.join(root_path, 'stdout.log'), path.join(root_path, 'stderr.log'));
                 console.log((new Date()) + ' : background process started successfully with pid ' + pid);
               }
-              child_proc = child_process.execFile(hook_name, [], {}, function (err) {
-                if (hook_number === files.length - 1) {
+              if (hooks_params[hook_type][0] !== 'stdin') {
+                args = inputs;
+              }
+              child_proc = child_process.execFile(hook_name, args, {}, function (err) {
+                if (hook_number === files.length - 1
+                    && hooks_params[hook_type][0] == 'stdin') {
                   process.stdin.resume();
                 }
                 if (err) {
@@ -147,7 +173,8 @@ Manager.prototype = {
               child_proc.stdin.on('error', function (err) {
                 //console.error('' + err);
               });
-              if (child_proc.stdin.writable) {
+              if (child_proc.stdin.writable
+                  && hooks_params[hook_type][0] == 'stdin') {
                 child_proc.stdin.write(inputs);
                 child_proc.stdin.end();
               }
@@ -155,21 +182,22 @@ Manager.prototype = {
           });
         });
       };
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', function (chunk) {
-      inputs += chunk;
-      if (inputs.charAt(inputs.length - 1) !== "\n") {
-        return;
-      }
-      process.stdin.pause();
-      exec(inputs);
-    });
-    process.stdin.on('end', function () {
-    });
-    if (process.stdin.writable === false) {
-      process.stdin.pause();
-      exec('');
+    if (hooks_params[hook_type][0] == 'stdin') {
+      process.stdin.setEncoding('utf8');
+      process.stdin.on('data', function (chunk) {
+        inputs += chunk;
+        if (inputs.charAt(inputs.length - 1) !== "\n") {
+          return;
+        }
+        process.stdin.pause();
+        exec.call(this, inputs);
+      });
+      process.stdin.on('end', function () {
+      });
+      process.stdin.resume();
+    }
+    else {
+      exec.call(this, process_args);
     }
   },
   search: function (hook_type, query) {
@@ -360,7 +388,7 @@ if (process.argv.length > 1 && !module.parent) {
   args.shift();
   manager.bin_name = path.basename(args.shift());
   if (~hooks.indexOf(manager.bin_name)) {
-    manager.hook(manager.bin_name);
+    manager.hook(manager.bin_name, args);
   }
   else {
     var fn = args.shift();
