@@ -100,7 +100,61 @@ Manager.prototype = {
       , glob = require('glob')
       , inputs = ""
       , daemonized = false
-      , self = this;
+      , self = this
+      , exec = function (inputs) {
+        glob(path.join(root_path, hook_type + '.d', '*'), function (err, files) {
+          if (err) {
+            return console.log(err);
+          }
+          console.log(files.length + ' ' + hook_type + ' script(s) to execute, ', files);
+          files.forEach(function (hook_name, hook_number) {
+
+            if (fs.statSync(hook_name).isDirectory()) {
+              return;
+            }
+            self.getHooksConf({"hook_type": hook_type,
+                               "hook_name": path.basename(hook_name),
+                               "root_path": root_path}, function (err, conf) {
+              var pid = -1
+                , child_proc = null;
+              if (err) {
+                return console.error(err);
+              }
+              if (((typeof conf.async !== "undefined" && conf.async)
+                   || (typeof conf.async === "undefined" && hook_type.substr(0, 5) === 'post-'))
+                  && !daemonized) {
+                daemonized = true;
+                pid = daemon.start(path.join(root_path, 'stdout.log'), path.join(root_path, 'stderr.log'));
+                console.log((new Date()) + ' : background process started successfully with pid ' + pid);
+              }
+              child_proc = child_process.execFile(hook_name, [], {}, function (err) {
+                if (hook_number === files.length - 1) {
+                  process.stdin.resume();
+                }
+                if (err) {
+                  child_proc.stdin.end();
+                  process.exit(1);
+                  return;
+                }
+              });
+              console.log('[HOOK] ' + hook_name + ' (' + child_proc.pid + ')');
+              if (child_proc.stdout.readable) {
+                child_proc.stdout.pipe(process.stdout);
+              }
+              if (child_proc.stderr.readable) {
+                child_proc.stderr.pipe(process.stderr);
+              }
+              child_proc.stdin.on('error', function (err) {
+                //console.error('' + err);
+              });
+              if (child_proc.stdin.writable) {
+                child_proc.stdin.write(inputs);
+                child_proc.stdin.end();
+              }
+            });
+          });
+        });
+      };
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
     process.stdin.on('data', function (chunk) {
@@ -109,61 +163,14 @@ Manager.prototype = {
         return;
       }
       process.stdin.pause();
-      glob(path.join(root_path, hook_type + '.d', '*'), function (err, files) {
-        if (err) {
-          return console.log(err);
-        }
-        console.log(files.length + ' ' + hook_type + ' script(s) to execute, ', files);
-        files.forEach(function (hook_name, hook_number) {
-
-          if (fs.statSync(hook_name).isDirectory()) {
-            return;
-          }
-          self.getHooksConf({"hook_type": hook_type,
-                             "hook_name": path.basename(hook_name),
-                             "root_path": root_path}, function (err, conf) {
-            var pid = -1
-              , child_proc = null;
-            if (err) {
-              return console.error(err);
-            }
-            if (((typeof conf.async !== "undefined" && conf.async)
-                 || (typeof conf.async === "undefined" && hook_type.substr(0, 5) === 'post-'))
-                && !daemonized) {
-              daemonized = true;
-              pid = daemon.start(path.join(root_path, 'stdout.log'), path.join(root_path, 'stderr.log'));
-              console.log((new Date()) + ' : background process started successfully with pid ' + pid);
-            }
-            child_proc = child_process.execFile(hook_name, [], {}, function (err) {
-              if (hook_number === files.length - 1) {
-                process.stdin.resume();
-              }
-              if (err) {
-                child_proc.stdin.end();
-                process.exit(1);
-                return;
-              }
-            });
-            console.log('[HOOK] ' + hook_name + ' (' + child_proc.pid + ')');
-            if (child_proc.stdout.readable) {
-              child_proc.stdout.pipe(process.stdout);
-            }
-            if (child_proc.stderr.readable) {
-              child_proc.stderr.pipe(process.stderr);
-            }
-            child_proc.stdin.on('error', function (err) {
-              //console.error('' + err);
-            });
-            if (child_proc.stdin.writable) {
-              child_proc.stdin.write(inputs);
-              child_proc.stdin.end();
-            }
-          });
-        });
-      });
+      exec(inputs);
     });
     process.stdin.on('end', function () {
     });
+    if (process.stdin.writable === false) {
+      process.stdin.pause();
+      exec('');
+    }
   },
   search: function (hook_type, query) {
     var hooks = [];
