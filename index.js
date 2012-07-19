@@ -26,9 +26,11 @@ var hooks = ['applypatch-msg', 'commit-msg', 'pre-auto-gc', 'pre-applypatch', 'p
                     'pre-auto-gc': [],
                     'post-rewrite': ['stdin', 'old_value', 'new_value', 'extra', '*']}
   , git_dir = "GIT_DIR" in process.env
-            ? process.env.GIT_DIR
-            : (process.cwd().substr(-4) == '.git' ? process.cwd() : '.git')
+            ? path.join(process.cwd(), process.env.GIT_DIR)
+            : (process.cwd().substr(-4) == '.git' ? process.cwd() : path.join(process.cwd(), '.git'))
   , root_path = path.join(git_dir, 'hooks');
+
+console.log(git_dir)
 
 function rmdirRecursiveSync(directory) {
   if (directory.length < 3) {
@@ -51,9 +53,8 @@ function Manager () {
   this.getHooksConf = function (opts, cb) {
     var glob = require('glob')
       , confs = []
-      , hook_type = typeof opts === "object" ? opts.hook_type : opts
-      , hook_name = opts.hook_name
-      , root_path = typeof opts === "object" ? opts.root_path : '.';
+      , hook_type = typeof opts === "object" && "hook_type" in opts ? opts.hook_type : opts
+      , hook_name = opts.hook_name;
     fs.stat(path.join(root_path, hook_type + '.d'), function(err, stat) {
       if (err) {
         return console.error(err);
@@ -67,7 +68,7 @@ function Manager () {
           if (!exists) {
             return cb("hook configuration not found [" + conf_file + "]");
           }
-          var conf = require('./' + path.join('hooks', hook_type, hook_name, 'hook.json'));
+          var conf = require(path.join(root_path, 'hooks', hook_type, hook_name, 'hook.json'));
           conf.name = hook_name;
           cb(null, conf);
         });
@@ -81,7 +82,7 @@ function Manager () {
           return cb('no ' + hook_type + ' hook found');
         }
         files.forEach(function (file) {
-          var conf = require('./' + file);
+          var conf = require(file);
           conf.name = path.basename(path.dirname(file));
           confs.push(conf);
         });
@@ -94,24 +95,24 @@ function Manager () {
 Manager.prototype = {
   init: function () {
     hooks.forEach(function (hook) {
-      if (!fs.existsSync(hook)) {
-        fs.symlinkSync(__filename, hook, 'file');
+      if (!fs.existsSync(path.join(root_path, hook))) {
+        fs.symlinkSync(__filename, path.join(root_path, hook), 'file');
       }
-      if (!fs.existsSync(hook + '.d')) {
-        fs.mkdirSync(hook + '.d', 493); // 0755
+      if (!fs.existsSync(path.join(root_path, hook + '.d'))) {
+        fs.mkdirSync(path.join(root_path, hook + '.d'), 493); // 0755
       }
     });
   },
   reset: function () {
     hooks.forEach(function (hook) {
-      if (fs.existsSync(hook)) {
-        fs.unlinkSync(hook);
+      if (fs.existsSync(path.join(root_path, hook))) {
+        fs.unlinkSync(path.join(root_path, hook));
       }
-      if (fs.existsSync(hook + '.d')) {
-        rmdirRecursiveSync(hook + '.d');
+      if (fs.existsSync(path.join(root_path, hook + '.d'))) {
+        rmdirRecursiveSync(path.join(root_path, hook + '.d'));
       }
-      fs.symlinkSync(__filename, hook, 'file');
-      fs.mkdirSync(hook + '.d', 493); // 0755
+      fs.symlinkSync(__filename, path.join(root_path, hook), 'file');
+      fs.mkdirSync(path.join(root_path, hook + '.d'), 493); // 0755
     });
   },
   hook: function (hook_type, process_args) {
@@ -126,7 +127,7 @@ Manager.prototype = {
             return console.log(err);
           }
           if (files.length > 0) {
-            console.log(files.length + ' ' + hook_type + ' script(s) to execute, ', files);
+            console.log(files.length + ' ' + hook_type + ' script(s) to execute');
           }
           else {
             console.log('no ' + hook_type + ' script to execute');
@@ -137,8 +138,7 @@ Manager.prototype = {
               return;
             }
             self.getHooksConf({"hook_type": hook_type,
-                               "hook_name": path.basename(hook_name),
-                               "root_path": root_path}, function (err, conf) {
+                               "hook_name": path.basename(hook_name)}, function (err, conf) {
               var pid = -1
                 , child_proc = null
                 , args = [];
@@ -228,16 +228,18 @@ Manager.prototype = {
       if (err) {
         return console.error(err);
       }
-      var filepath = path.join(hook_type + '.d', hook_name)
+      var filepath = path.join(root_path, hook_type + '.d', hook_name)
         , args = {};
       if (fs.existsSync(filepath)) {
         return console.error(hook_name + ' already exists for the ' + hook_type + ' hook');
       }
       function setup () {
-        fs.symlinkSync(path.join('..', 'hooks', hook_type, hook_name, conf.index), path.join(hook_type + '.d', hook_name), 'file');
+        fs.symlinkSync(path.join(root_path, 'hooks', hook_type, hook_name, conf.index),
+                       path.join(root_path, hook_type + '.d', hook_name),
+                       'file');
         console.log('hook setup');
         if (typeof conf['post-install'] !== "undefined") {
-          var args = {cwd: path.join('hooks', hook_type, hook_name)};
+          var args = {cwd: path.join(root_path, 'hooks', hook_type, hook_name)};
           child_process.exec(conf['post-install'], args, function (err, stdout, stderr) {
             if (err) {
               return console.error(err);
@@ -252,7 +254,7 @@ Manager.prototype = {
         }
       }
       if (typeof conf['pre-install'] !== "undefined") {
-        args = {cwd: path.join('hooks', hook_type, hook_name)};
+        args = {cwd: path.join(root_path, 'hooks', hook_type, hook_name)};
         child_process.exec(conf['pre-install'], args, function (err, stdout, stderr) {
           if (err) {
             return console.error(err);
@@ -277,7 +279,7 @@ Manager.prototype = {
       if (err) {
         return console.error(err);
       }
-      var index = path.join(hook_type + '.d', hook_name)
+      var index = path.join(root_path, hook_type + '.d', hook_name)
         , args = {};
       function unlink() {
         if (fs.existsSync(index)) {
@@ -285,7 +287,7 @@ Manager.prototype = {
         }
         console.log('hook removed');
         if (typeof conf['post-remove'] !== "undefined") {
-          var args = {cwd: path.join('hooks', hook_type, hook_name)};
+          var args = {cwd: path.join(root_path, 'hooks', hook_type, hook_name)};
           child_process.exec(conf['post-remove'], args, function (err, stdout, stderr) {
             if (err) {
               return console.error(err);
@@ -300,7 +302,7 @@ Manager.prototype = {
         }
       }
       if (typeof conf['pre-remove'] !== "undefined") {
-        args = {cwd: path.join('hooks', hook_type, hook_name)};
+        args = {cwd: path.join(root_path, 'hooks', hook_type, hook_name)};
         child_process.exec(conf['pre-remove'], args, function (err, stdout, stderr) {
           if (err) {
             return console.error(err);
@@ -324,7 +326,7 @@ Manager.prototype = {
     if (typeof hook_type === 'undefined') {
       return console.error('please define <hook_type>');
     }
-    glob(path.join(hook_type + '.d', '*'), function (err, files) {
+    glob(path.join(root_path, hook_type + '.d', '*'), function (err, files) {
       if (err) {
         return console.error(err);
       }
