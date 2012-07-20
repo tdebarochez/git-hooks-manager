@@ -30,8 +30,6 @@ var hooks = ['applypatch-msg', 'commit-msg', 'pre-auto-gc', 'pre-applypatch', 'p
             : (process.cwd().substr(-4) == '.git' ? process.cwd() : path.join(process.cwd(), '.git'))
   , root_path = path.join(git_dir, 'hooks');
 
-console.log(git_dir)
-
 function rmdirRecursiveSync(directory) {
   if (directory.length < 3) {
     throw new Error('bad directory name [' + directory + ']');
