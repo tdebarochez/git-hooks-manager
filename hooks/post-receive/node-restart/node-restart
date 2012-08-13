@@ -1,0 +1,41 @@
+#!/bin/sh
+
+DEPLOY_PATH=$(git config hooks.node-restart-deploy-path)
+LOCK_FILE=$(git config hooks.node-restart-pid-file)
+LOG_FILE=$(git config hooks.node-restart-log-file)
+
+if [ -z "$DEPLOY_PATH" -o "${#DEPLOY_PATH}" -lt 3 ]
+then
+  echo 'You must define a deploy path : "$ git config hooks.node-restart-deploy-path /opt/project-name"'
+  exit 1;
+fi
+
+if [ -z "$LOCK_FILE" -o "${#LOCK_FILE}" -lt 3 ]
+then
+  echo 'You must define a pid file : "$ git config hooks.node-restart-pid-file /var/lock/project-name.pid"'
+  exit 1;
+fi
+
+if [ -z "$LOG_FILE" -o "${#LOG_FILE}" -lt 3 ]
+then
+  echo 'You must define a log : "$ git config hooks.node-restart-log-file /var/log/project-name.log"'
+  exit 1;
+fi
+
+rm -rf $DEPLOY_PATH
+mkdir -p $DEPLOY_PATH
+git archive --format=tar HEAD | (cd $DEPLOY_PATH && tar xf -)
+cd $DEPLOY_PATH
+npm install
+if [ -f $LOCK_FILE ]
+then
+  pid=`cat $LOCK_FILE`
+  kill -9 $pid
+  echo "kill process $pid [$?]"
+fi
+nohup node . &>>$LOG_FILE &
+pid=$!
+echo $pid > $LOCK_FILE
+echo "start process $pid"
+sleep 5
+tail $LOG_FILE
