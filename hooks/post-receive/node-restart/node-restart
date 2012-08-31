@@ -22,18 +22,27 @@ then
   exit 1;
 fi
 
+if [ -d $DEPLOY_PATH/node_modules ]
+then
+  mv $DEPLOY_PATH/node_modules /tmp/tmp-node_modules
+fi
 rm -rf $DEPLOY_PATH
 mkdir -p $DEPLOY_PATH
 git archive --format=tar HEAD | (cd $DEPLOY_PATH && tar xf -)
 cd $DEPLOY_PATH
+if [ -d /tmp/tmp-node_modules ]
+then
+  mv /tmp/tmp-node_modules $DEPLOY_PATH/node_modules
+fi
 npm install
 if [ -f $LOCK_FILE ]
 then
   pid=`cat $LOCK_FILE`
-  kill -9 $pid
+  pkill -15 -P $pid
   echo "kill process $pid [$?]"
+  sleep 1
 fi
-nohup node . &>>$LOG_FILE &
+nohup npm start &>>$LOG_FILE &
 pid=$!
 echo $pid > $LOCK_FILE
 echo "start process $pid"
