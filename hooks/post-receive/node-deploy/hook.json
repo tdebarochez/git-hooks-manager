@@ -1,0 +1,11 @@
+{
+  "index": "node-deploy",
+  "description": "More complex script than 'node-restart', it provide a zero-downtime and chrooted environment \
+ for your application. No variable's definition is needed, but you must know that it use nginx as reverse proxy \
+ (default setup is ok) and chroot you app in /var/deploy/YYYY-(M)M-(D)D/(H)H-(m)m-(s)s/yourapp/ with your source in \
+ repo sub-directory. A random port is chosen for you on startup and exposed via process.env.HTTP_PORT. In your \
+ package.json you must provide a domains list for the nginx virtual host (main domain and aliases). For starting, it \
+ execute 'npm install' and then the scripts.start defined in your package.json file. The old process will not be \
+ killed until the newest process successfuly start.",
+  "async": false
+}
