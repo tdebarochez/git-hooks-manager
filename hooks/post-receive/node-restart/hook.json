@@ -1,7 +1,8 @@
 {
   "index": "node-restart",
-  "description": "kill & restart your node application. You must define 3 variables : 'node-restart-deploy-path', \
- 'node-restart-pid-file' and 'node-restart-log-file'. Deploy path must be the full deploy path for your project, ie : \
- /opt/project-name (will be remove on every restart)",
+  "description": "simple script to kill, deploy and re-start your node application (call 'npm start'). For a more \
+ complex use, check 'node-deploy' hook. You must define 3 variables : 'node-restart-deploy-path', \
+ 'node-restart-pid-file' and 'node-restart-log-file'. Deploy path must be the full deploy path for \
+ your project, ie : /opt/project-name (will be remove on every restart)",
   "async": false
 }
