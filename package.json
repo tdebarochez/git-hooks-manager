@@ -5,7 +5,7 @@
   "version": "0.0.0",
   "main": "index.js",
   "dependencies": {
-    "daemon": "0.5.1",
+    "daemon": "1.0.0",
     "glob": "3.1.9"
   },
   "bin": {"git-hooks-manager": "./index.js"},
@@ -16,6 +16,6 @@
   "devDependencies": {},
   "optionalDependencies": {},
   "engines": {
-    "node": "*"
+    "node": ">= 0.8.0"
   }
 }
